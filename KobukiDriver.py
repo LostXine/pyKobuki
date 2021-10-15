@@ -50,6 +50,7 @@ class KobukiDriver:
         self.battery_dangerous = parameters['battery_dangerous']
         self.linear_velocity_max = parameters['linear_velocity_max']
         self.angular_velocity_max = parameters['angular_velocity_max']
+        self.wheelbase = parameters['wheelbase']
         
         self.battery_warning_flag = False       
         self.battery_critical_flag = False
@@ -204,7 +205,14 @@ class KobukiDriver:
     
         linear_velocity = clip(linear_velocity, self.linear_velocity_max)
         angular_velocity = clip(angular_velocity, self.angular_velocity_max)
-        self.send_cmd([CmdName.BaseControl, 0x04] + signed2lsb(linear_velocity) + signed2lsb(angular_velocity))
+        radius = 0
+        if abs(angular_velocity) > 0:
+            if abs(linear_velocity) == 0:
+                linear_velocity = angular_velocity * self.wheelbase / 2
+                radius = 1
+            else:
+                radius = linear_velocity / angular_velocity 
+        self.send_cmd([CmdName.BaseControl, 0x04] + signed2lsb(linear_velocity) + signed2lsb(radius))
         
     def send_cmd(self, payload):
         self.send_payload(payload)
@@ -428,6 +436,7 @@ if __name__ == '__main__':
         'battery_low': 14.0,
         'linear_velocity_max': 300,
         'angular_velocity_max': 300,
+        'wheelbase': 100,
     }
     kd = KobukiDriver(para)
     while True:
